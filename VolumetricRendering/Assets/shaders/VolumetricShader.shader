@@ -9,10 +9,13 @@
 		_StepSize ("Step Size", float) = 0.01
 		_MinDistance("Min Distance", float) = 0.01
 		_Color("Sphere Color", Color) = (1, 0, 0)
+		_Specular("Specular Power", Range(0, 1)) = 0
+		_Gloss("Gloss", Range(0, 10)) = 0
 	}
 	SubShader
 	{
 		Tags { "RenderType"="Opaque" }
+		Tags { "LightMode" = "ForwardBase" }
 		LOD 100
 
 		Pass
@@ -20,8 +23,6 @@
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
-			// make fog work
-			#pragma multi_compile_fog
 			
 			#include "UnityCG.cginc"
 			#include "Lighting.cginc"
@@ -35,7 +36,6 @@
 			struct v2f
 			{
 				float2 uv : TEXCOORD0;
-				//UNITY_FOG_COORDS(1)
 				float4 vertex : SV_POSITION;
 				float3 wPos : TEXCOORD1;
 			};
@@ -48,6 +48,8 @@
 			float _StepSize;
 			float _MinDistance;
 			fixed3 _Color;
+			float _Specular;
+			float _Gloss;
 			
 			v2f vert (appdata v)
 			{
@@ -55,7 +57,6 @@
 				o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
 				o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 				o.wPos = mul(_Object2World, v.vertex).xyz;
-				UNITY_TRANSFER_FOG(o,o.vertex);
 				return o;
 			}
 
@@ -64,14 +65,18 @@
 				return distance(p, _Center) - _Radius;
 			}
 
-			fixed4 simpleLambert(fixed3 normal)
+			fixed4 simpleLambert(fixed3 normal, float3 viewDir)
 			{
 				fixed3 lightDir = _WorldSpaceLightPos0.xyz;
 				fixed3 lightCol = _LightColor0.rgb;
 
 				fixed NdotL = max(dot(normal, lightDir), 0);
+
+				fixed3 h = (lightDir - viewDir) / 2;
+				fixed s = pow(dot(normal, h), _Specular) * _Gloss;
+
 				fixed4 c;
-				c.rgb = _Color * lightCol * NdotL;
+				c.rgb = _Color * lightCol * NdotL + s;
 				c.a = 1;
 				return c;
 			}
@@ -91,10 +96,10 @@
 				);
 			}
 
-			fixed4 renderSurface(float3 p)
+			fixed4 renderSurface(float3 p, float3 dir)
 			{
 				float3 n = normal(p);
-				return simpleLambert(n);
+				return simpleLambert(n, dir);
 			}
 
 			fixed4 raymarchHit(float3 pos, float3 dir)
@@ -102,7 +107,7 @@
 				for (int i = 0; i < _Steps; i++)
 				{
 					float dist = map(pos);
-					if (dist < _MinDistance) return renderSurface(pos);
+					if (dist < _MinDistance) return renderSurface(pos, dir);
 
 					pos += dist * dir;
 				}
@@ -116,8 +121,6 @@
 
 				// sample the texture
 				//fixed4 col = tex2D(_MainTex, i.uv);
-				// apply fog
-				//UNITY_APPLY_FOG(i.fogCoord, col);
 
 				return raymarchHit(worldPos, viewDir);
 			}
