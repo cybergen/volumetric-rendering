@@ -3,14 +3,11 @@
 	Properties
 	{
 		_MainTex ("Texture", 2D) = "white" {}
-		_Radius ("Radius", float) = 1
-		_Center ("Center", Vector) = (0, 0, 0)
-		_Steps ("Steps", int) = 64
-		_StepSize ("Step Size", float) = 0.01
 		_MinDistance("Min Distance", float) = 0.01
 		_Color("Sphere Color", Color) = (1, 0, 0)
 		_Specular("Specular Power", Range(0, 1)) = 0
 		_Gloss("Gloss", Range(0, 10)) = 0
+		_Volume("Volume", 3D) = "" {}
 	}
 	SubShader
 	{
@@ -42,14 +39,11 @@
 
 			sampler2D _MainTex;
 			float4 _MainTex_ST;
-			float3 _Center;
-			float _Radius;
-			int _Steps;
-			float _StepSize;
 			float _MinDistance;
 			fixed3 _Color;
 			float _Specular;
 			float _Gloss;
+			sampler3D _Volume;
 			
 			v2f vert (appdata v)
 			{
@@ -62,10 +56,11 @@
 
 			float map(float3 p)
 			{
-				return distance(p, _Center) - _Radius;
+				//return distance(p, _Center) - _Radius;
+				return 2 * (tex3D(_Volume, p).a - 0.5);
 			}
 
-			fixed4 simpleLambert(fixed3 normal, float3 viewDir)
+			fixed4 simpleLambert(fixed3 normal, float3 viewDir, fixed3 baseColor)
 			{
 				fixed3 lightDir = _WorldSpaceLightPos0.xyz;
 				fixed3 lightCol = _LightColor0.rgb;
@@ -76,7 +71,7 @@
 				fixed s = pow(dot(normal, h), _Specular) * _Gloss;
 
 				fixed4 c;
-				c.rgb = _Color * lightCol * NdotL + s;
+				c.rgb = baseColor;// * lightCol * NdotL + s;
 				c.a = 1;
 				return c;
 			}
@@ -99,12 +94,14 @@
 			fixed4 renderSurface(float3 p, float3 dir)
 			{
 				float3 n = normal(p);
-				return simpleLambert(n, dir);
+				return simpleLambert(n, dir, p);
 			}
 
 			fixed4 raymarchHit(float3 pos, float3 dir)
 			{
-				for (int i = 0; i < _Steps; i++)
+				const float steps = 22;
+
+				for (int i = 0; i < steps; i++)
 				{
 					float dist = map(pos);
 					if (dist < _MinDistance) return renderSurface(pos, dir);
@@ -116,11 +113,8 @@
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
-				float3 worldPos = i.wPos;
+				float3 worldPos = mul(_World2Object, i.wPos).xyz;
 				float3 viewDir = normalize(i.wPos - _WorldSpaceCameraPos);
-
-				// sample the texture
-				//fixed4 col = tex2D(_MainTex, i.uv);
 
 				return raymarchHit(worldPos, viewDir);
 			}
