@@ -56,11 +56,11 @@
 
 			float map(float3 p)
 			{
-				//return distance(p, _Center) - _Radius;
+				//return distance(p, float3(0, 0, 0)) - 0.45;
 				return 2 * (tex3D(_Volume, p).a - 0.5);
 			}
 
-			fixed4 simpleLambert(fixed3 normal, float3 viewDir, fixed3 baseColor)
+			fixed4 simpleLambert(fixed3 normal, float3 viewDir, float3 rgb)
 			{
 				fixed3 lightDir = _WorldSpaceLightPos0.xyz;
 				fixed3 lightCol = _LightColor0.rgb;
@@ -71,7 +71,7 @@
 				fixed s = pow(dot(normal, h), _Specular) * _Gloss;
 
 				fixed4 c;
-				c.rgb = baseColor;// * lightCol * NdotL + s;
+				c.rgb = rgb;// * lightCol * NdotL + s;//_Color * lightCol * NdotL + s;
 				c.a = 1;
 				return c;
 			}
@@ -94,7 +94,7 @@
 			fixed4 renderSurface(float3 p, float3 dir)
 			{
 				float3 n = normal(p);
-				return simpleLambert(n, dir, p);
+				return simpleLambert(n, dir, tex3D(_Volume, p).rgb);
 			}
 
 			fixed4 raymarchHit(float3 pos, float3 dir)
@@ -104,7 +104,10 @@
 				for (int i = 0; i < steps; i++)
 				{
 					float dist = map(pos);
-					if (dist < _MinDistance) return renderSurface(pos, dir);
+
+					if (pos.x > 1 || pos.x < -1 || pos.y > 1 || pos.y < -1 || pos.z > 1 || pos.z < -1) return fixed4(1,1,1,1);
+
+					if (dist < _MinDistance) return renderSurface(pos, dir);					
 
 					pos += dist * dir;
 				}
@@ -113,7 +116,7 @@
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
-				float3 worldPos = mul(_World2Object, i.wPos).xyz;
+				float3 worldPos = i.wPos;
 				float3 viewDir = normalize(i.wPos - _WorldSpaceCameraPos);
 
 				return raymarchHit(worldPos, viewDir);
