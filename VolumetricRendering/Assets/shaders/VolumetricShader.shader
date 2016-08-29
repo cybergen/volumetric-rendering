@@ -20,6 +20,7 @@
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
+			#pragma enable_d3d11_debug_symbols
 			
 			#include "UnityCG.cginc"
 			#include "Lighting.cginc"
@@ -27,14 +28,12 @@
 			struct appdata
 			{
 				float4 vertex : POSITION;
-				float2 uv : TEXCOORD0;
 			};
 
 			struct v2f
 			{
-				float2 uv : TEXCOORD0;
 				float4 vertex : SV_POSITION;
-				float3 wPos : TEXCOORD1;
+				float3 lPos : TEXCOORD1;
 			};
 
 			sampler2D _MainTex;
@@ -49,74 +48,94 @@
 			{
 				v2f o;
 				o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
-				o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-				o.wPos = mul(_Object2World, v.vertex).xyz;
+				o.lPos = v.vertex.xyz;
 				return o;
 			}
 
 			float map(float3 p)
 			{
-				//return distance(p, _Center) - _Radius;
-				return 2 * (tex3D(_Volume, p).a - 0.5);
+				float3 uvw = clamp(p * 0.5 + 0.5, 0, 1);
+				return 2 * (tex3D(_Volume, uvw).a - 0.5);
 			}
 
-			fixed4 simpleLambert(fixed3 normal, float3 viewDir, fixed3 baseColor)
+			float shadow(fixed3 rayOrigin, fixed3 rayDir, float min, float max)
+			{
+				float t = min;
+				float maxSteps = 15;
+
+				// for (int count = 0; count < maxSteps && t < max; count++)
+				// {
+				// 	float h = map(rayOrigin + rayDir * t);
+				// 	if (h < _MinDistance) return 0.0;
+				// 	t += h;
+				// }
+				return 1.0;
+			}
+
+			fixed4 simpleLambert(fixed3 position, fixed3 normal, fixed3 viewDir)
 			{
 				fixed3 lightDir = _WorldSpaceLightPos0.xyz;
 				fixed3 lightCol = _LightColor0.rgb;
 
 				fixed NdotL = max(dot(normal, lightDir), 0);
 
+				//Self-shadow calculation
+				fixed3 start = position - lightDir;
+				float s = shadow(start, lightDir, 0, 0.3);
+				NdotL *= s;
+
 				fixed3 h = (lightDir - viewDir) / 2;
-				fixed s = pow(dot(normal, h), _Specular) * _Gloss;
+				fixed spec = pow(dot(normal, h), _Specular) * _Gloss;
 
 				fixed4 c;
-				c.rgb = baseColor;// * lightCol * NdotL + s;
+				c.rgb = _Color * lightCol * NdotL + spec;//rgb;// * lightCol * NdotL + s;//_Color * lightCol * NdotL + s;
 				c.a = 1;
 				return c;
 			}
 
-			float3 normal(float3 p)
+			fixed3 normal(fixed3 p)
 			{
-				const float eps = 0.01;
+				const fixed eps = 0.05;
 
 				return normalize
 				(
-					float3
+					fixed3
 					(
-						map(p + float3(eps, 0, 0)) - map(p - float3(eps, 0, 0)),
-						map(p + float3(0, eps, 0)) - map(p - float3(0, eps, 0)),
-						map(p + float3(0, 0, eps)) - map(p - float3(0, 0, eps))
+						map(p + fixed3(eps, 0, 0)) - map(p - fixed3(eps, 0, 0)),
+						map(p + fixed3(0, eps, 0)) - map(p - fixed3(0, eps, 0)),
+						map(p + fixed3(0, 0, eps)) - map(p - fixed3(0, 0, eps))
 					)
 				);
 			}
 
-			fixed4 renderSurface(float3 p, float3 dir)
+			float3 raymarchHit(float3 pos, float3 dir)
 			{
-				float3 n = normal(p);
-				return simpleLambert(n, dir, p);
-			}
-
-			fixed4 raymarchHit(float3 pos, float3 dir)
-			{
-				const float steps = 22;
+				const float steps = 22;			
 
 				for (int i = 0; i < steps; i++)
 				{
 					float dist = map(pos);
-					if (dist < _MinDistance) return renderSurface(pos, dir);
-
+					if (dist < _MinDistance) return pos;
 					pos += dist * dir;
 				}
-				return fixed4(1,1,1,1);
+				return float3(-1,-1,-1);
 			}
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
-				float3 worldPos = mul(_World2Object, i.wPos).xyz;
-				float3 viewDir = normalize(i.wPos - _WorldSpaceCameraPos);
+				float3 localPos = i.lPos;
+				float3 viewDir = normalize(localPos - mul(_World2Object, _WorldSpaceCameraPos));
+				float3 rayHitPoint = raymarchHit(localPos, viewDir);
 
-				return raymarchHit(worldPos, viewDir);
+				if (rayHitPoint.x == -1) 
+				{
+					return fixed4(1, 1, 1, 1);
+				}
+				else 
+				{
+					fixed3 n = normal(rayHitPoint);
+					return simpleLambert(rayHitPoint, n, viewDir);
+				}
 			}
 			ENDCG
 		}
