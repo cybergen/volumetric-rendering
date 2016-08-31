@@ -11,8 +11,10 @@
 	}
 	SubShader
 	{
-		Tags { "RenderType"="Opaque" }
 		Tags { "LightMode" = "ForwardBase" }
+		Tags { "Queue"="Transparent" "RenderType"="Transparent" }
+        Blend SrcAlpha OneMinusSrcAlpha
+
 		LOD 100
 
 		Pass
@@ -20,6 +22,7 @@
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
+			#pragma alpha
 			#pragma enable_d3d11_debug_symbols
 			
 			#include "UnityCG.cginc"
@@ -88,14 +91,15 @@
 				fixed spec = pow(dot(normal, h), _Specular) * _Gloss;
 
 				fixed4 c;
-				c.rgb = _Color * lightCol * NdotL + spec;//rgb;// * lightCol * NdotL + s;//_Color * lightCol * NdotL + s;
+				NdotL = NdotL * 0.5 + 0.5;
+				c.rgb = position.xyz * lightCol * NdotL + spec;//rgb;// * lightCol * NdotL + s;//_Color * lightCol * NdotL + s;
 				c.a = 1;
 				return c;
 			}
 
 			fixed3 normal(fixed3 p)
 			{
-				const fixed eps = 0.05;
+				const fixed eps = 0.15;
 
 				return normalize
 				(
@@ -110,7 +114,7 @@
 
 			float3 raymarchHit(float3 pos, float3 dir)
 			{
-				const float steps = 22;			
+				const float steps = 32;			
 
 				for (int i = 0; i < steps; i++)
 				{
@@ -129,7 +133,7 @@
 
 				if (rayHitPoint.x == -1) 
 				{
-					return fixed4(1, 1, 1, 1);
+					return fixed4(0, 0, 0, -1);
 				}
 				else 
 				{

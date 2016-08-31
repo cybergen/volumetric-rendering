@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class Create3DTexture : MonoBehaviour
 {
-    public const int SIZE = 32;
+    public const int SIZE = 16;
     public const float RADIUS_ONE = 0.15f;
     public const float RADIUS_TWO = 0.1f;
 
@@ -14,7 +14,7 @@ public class Create3DTexture : MonoBehaviour
         var mat = selectedGO.GetComponent<MeshRenderer>().materials[0];
         var tex = new Texture3D(SIZE, SIZE, SIZE, TextureFormat.ARGB32, false);
         tex.wrapMode = TextureWrapMode.Clamp;
-        tex.filterMode = FilterMode.Bilinear;
+        tex.filterMode = FilterMode.Trilinear;
 
         var cols = new Color[SIZE*SIZE*SIZE];
         var index = 0;
