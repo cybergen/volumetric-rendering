@@ -14,6 +14,9 @@
 		_CenterTwoDest("Center Two Dest", Vector) = (0, 0, 0)
 		_SoftShadowPower("Shadow Edge", float) = 0.0
 		_TimeMultiplier("Time Multiplier", float) = 1.0
+		_CenterThree("Center Three", Vector) = (0, 0, 0)
+		_RadiusThree("Radius Three", float) = 0.25
+		_RadiusThreeDest("Radius Three Dest", float) = 0.25
 	}
 	SubShader
 	{
@@ -58,6 +61,9 @@
 			float _RadiusTwo;
 			float _TimeMultiplier;
 			float _SoftShadowPower;
+			float3 _CenterThree;
+			float _RadiusThree;
+			float _RadiusThreeDest;
 			
 			v2f vert (appdata v)
 			{
@@ -67,14 +73,30 @@
 				return o;
 			}
 
+			float unionRound(float a, float b, float r)
+			{
+				float2 u = max(float2(r - a, r - b), float2(0, 0));
+				return max(r, min(a, b)) - length(u);				
+			}
+
+			float smoothMin(float a, float b, float k)
+			{
+				a = pow(a, k);
+				b = pow(b, k);
+				return pow((a * b) / (a + b), 1.0/k);
+			}
+
 			float map(float3 p)
 			{
 				float s = sin(_Time * _TimeMultiplier);
 				s = s * 0.5 + 0.5;
 				float3 currentCenter = lerp(_CenterTwo, _CenterTwoDest, s);
+				float currentRadiusThree = lerp(_RadiusThree, _RadiusThreeDest, 1-s);
 				float distOne = distance(p, _CenterOne) - _RadiusOne;
 				float distTwo = distance(p, currentCenter) - _RadiusTwo;
-				return min(distOne, distTwo);
+				float distThree = distance(p, _CenterThree) - currentRadiusThree;
+				float dist = unionRound(distOne, distTwo, 0.1);
+				return max(dist, -distThree);
 			}
 
 			float shadow(fixed3 rayOrigin, fixed3 rayDir, float minValue, float maxValue)
@@ -119,7 +141,7 @@
 
 			fixed3 normal(fixed3 p)
 			{
-				const fixed eps = 0.02;
+				const fixed eps = 0.035;
 
 				return normalize
 				(
