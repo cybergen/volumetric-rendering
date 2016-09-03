@@ -83,8 +83,8 @@
 				fixed NdotL = max(dot(normal, lightDir), 0);
 
 				//Self-shadow calculation
-				fixed3 start = position - lightDir;
-				float s = shadow(start, lightDir, 0, 0.3);
+				fixed3 start = position + lightDir;
+				float s = shadow(start, -lightDir, 0, 0.3);
 				NdotL *= s;
 
 				fixed3 h = (lightDir - viewDir) / 2;

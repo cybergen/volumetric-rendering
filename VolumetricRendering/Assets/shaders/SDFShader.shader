@@ -5,7 +5,7 @@
 		_MainTex ("Texture", 2D) = "white" {}
 		_MinDistance("Min Distance", float) = 0.01
 		_Color("Sphere Color", Color) = (1, 0, 0)
-		_Specular("Specular Power", Range(0, 1)) = 0
+		_Specular("Specular Power", Range(0, 64)) = 0
 		_Gloss("Gloss", Range(0, 10)) = 0
 		_CenterOne("Center One", Vector) = (0, 0, 0)
 		_RadiusOne("Radius One", float) = 0.25
@@ -17,6 +17,10 @@
 		_CenterThree("Center Three", Vector) = (0, 0, 0)
 		_RadiusThree("Radius Three", float) = 0.25
 		_RadiusThreeDest("Radius Three Dest", float) = 0.25
+		_TorusInfo("Torus Data", Vector) = (0.5, 0.75, 0)
+		_SpecularColor("Spec Color", Color) = (1, 1, 1)
+		_RimPower("Rim Power", float) = 0
+		_RimColor("Rim Color", Color) = (1, 1, 1)
 	}
 	SubShader
 	{
@@ -64,6 +68,10 @@
 			float3 _CenterThree;
 			float _RadiusThree;
 			float _RadiusThreeDest;
+			float3 _TorusInfo;
+			float3 _SpecularColor;
+			float _RimPower;
+			float3 _RimColor;
 			
 			v2f vert (appdata v)
 			{
@@ -86,6 +94,12 @@
 				return pow((a * b) / (a + b), 1.0/k);
 			}
 
+			float torus(float3 p, float2 t)
+			{
+				float2 q = float2(length(p.xz)-t.x,p.y);
+				return length(q)-t.y;
+			}
+
 			float map(float3 p)
 			{
 				float s = sin(_Time * _TimeMultiplier);
@@ -96,6 +110,8 @@
 				float distTwo = distance(p, currentCenter) - _RadiusTwo;
 				float distThree = distance(p, _CenterThree) - currentRadiusThree;
 				float dist = unionRound(distOne, distTwo, 0.1);
+				float torusDist = torus(p, _TorusInfo.xy);
+				dist = min(dist, torusDist);
 				return max(dist, -distThree);
 			}
 
@@ -131,17 +147,29 @@
 
 				fixed3 h = (lightDir - viewDir) / 2;
 				fixed spec = pow(dot(normal, h), _Specular) * _Gloss;
+				//fixed spec = max(0, dot(normal, -viewDir)) * _Specular;
+				if (NdotL <= 0)
+				{
+					spec = 0;
+				}
 
 				fixed4 c;
 				//NdotL = NdotL * 0.5 + 0.5;
-				c.rgb = _Color * lightCol * NdotL + spec;//rgb;// * lightCol * NdotL + s;//_Color * lightCol * NdotL + s;
+				c.rgb = _Color * lightCol * NdotL + (spec * _SpecularColor);//rgb;// * lightCol * NdotL + s;//_Color * lightCol * NdotL + s;
 				c.a = 1;
+				return c;
+			}
+
+			fixed4  rimLight(fixed3 norm, fixed3 viewDir, fixed4 c)
+			{
+				fixed rim = max(0, dot(norm, -viewDir)) * _RimPower;
+				c.rgb += rim * _RimColor;
 				return c;
 			}
 
 			fixed3 normal(fixed3 p)
 			{
-				const fixed eps = 0.035;
+				const fixed eps = 0.01;
 
 				return normalize
 				(
@@ -180,7 +208,7 @@
 				else 
 				{
 					fixed3 n = normal(rayHitPoint);
-					return simpleLambert(rayHitPoint, n, viewDir);
+					return rimLight(n, viewDir, simpleLambert(rayHitPoint, n, viewDir));
 				}
 			}
 			ENDCG
