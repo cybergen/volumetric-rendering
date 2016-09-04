@@ -184,7 +184,7 @@
 
 			float3 raymarchHit(float3 pos, float3 dir)
 			{
-				const float steps = 32;			
+				const float steps = 36;			
 
 				for (int i = 0; i < steps; i++)
 				{
