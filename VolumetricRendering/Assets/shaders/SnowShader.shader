@@ -5,6 +5,7 @@
 		_MainTex ("Texture", 2D) = "white" {}
 		_SnowHeight ("Snow Map", 2D) = "white" {}
 		_MinDistance("Min Distance", float) = 0.01
+		_SnowScale("Snow Scale", float) = 2.0
 	}
 	SubShader
 	{
@@ -28,11 +29,13 @@
 			struct appdata
 			{
 				float4 vertex : POSITION;
+				float2 uv : TEXCOORD0;
 			};
 
 			struct v2f
 			{
 				float4 vertex : SV_POSITION;
+				float2 uv : TEXCOORD0;
 				float3 lPos : TEXCOORD1;
 			};
 
@@ -40,19 +43,22 @@
 			sampler2D _SnowHeight;
 			float4 _MainTex_ST;
 			float _MinDistance;
+			float _SnowScale;
 			
 			v2f vert (appdata v)
 			{
 				v2f o;
 				o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
 				o.lPos = v.vertex.xyz;
+				o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 				return o;
 			}
 
 			float map(float3 p)
 			{
-				float2 uv = clamp(p.xy * 0.5 + 0.5, 0, 1);
-				return p.y - tex2D(_SnowHeight, uv).y;
+				float2 temp = p.xy + float2(0.5, 0.5);
+				float2 uv = clamp(temp, 0, 1);
+				return p.y - tex2D(_SnowHeight, uv).r * _SnowScale;
 			}
 
 			float shadow(fixed3 rayOrigin, fixed3 rayDir, float min, float max)
@@ -78,7 +84,7 @@
 
 				//Self-shadow calculation
 				// fixed3 start = position + lightDir;
-				// float s = shadow(start, -lightDir, 0, 0.3);
+				// float s = shadow(start, -lightDir, 0, 0.7);
 				// NdotL *= s;
 
 				fixed4 c;
@@ -129,7 +135,7 @@
 				else 
 				{
 					fixed3 n = normal(rayHitPoint);
-					return simpleLambert(rayHitPoint, n, viewDir, tex2D(_MainTex, rayHitPoint.xy * 0.5 + 0.5));
+					return simpleLambert(rayHitPoint, n, viewDir, tex2D(_MainTex, rayHitPoint.xy + float2(0.5, 0.5)));
 				}
 			}
 			ENDCG
