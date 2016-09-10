@@ -56,7 +56,7 @@
 
 			float map(float3 p)
 			{
-				float2 temp = p.xy + float2(0.5, 0.5);
+				float2 temp = p.xy * 0.5 + float2(0.5, 0.5);
 				float2 uv = clamp(temp, 0, 1);
 				return p.y - tex2D(_SnowHeight, uv).r * _SnowScale;
 			}
@@ -135,7 +135,7 @@
 				else 
 				{
 					fixed3 n = normal(rayHitPoint);
-					return simpleLambert(rayHitPoint, n, viewDir, tex2D(_MainTex, rayHitPoint.xy + float2(0.5, 0.5)));
+					return simpleLambert(rayHitPoint, n, viewDir, tex2D(_MainTex, rayHitPoint.xy * 0.5 + 0.5));
 				}
 			}
 			ENDCG

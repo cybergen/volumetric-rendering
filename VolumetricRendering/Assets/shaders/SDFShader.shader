@@ -19,6 +19,8 @@
 		_RadiusThreeDest("Radius Three Dest", float) = 0.25
 		_TorusInfo("Torus Data", Vector) = (0.5, 0.75, 0)
 		_SpecularColor("Spec Color", Color) = (1, 1, 1)
+		_ReverseRimPower("Reverse Rim Power", float) = 0
+		_ReverseRimColor("Reverse Rim Color", Color) = (1, 1, 1)
 		_RimPower("Rim Power", float) = 0
 		_RimColor("Rim Color", Color) = (1, 1, 1)
 	}
@@ -70,6 +72,8 @@
 			float _RadiusThreeDest;
 			float3 _TorusInfo;
 			float3 _SpecularColor;
+			float _ReverseRimPower;
+			float3 _ReverseRimColor;
 			float _RimPower;
 			float3 _RimColor;
 			
@@ -160,9 +164,16 @@
 				return c;
 			}
 
-			fixed4  rimLight(fixed3 norm, fixed3 viewDir, fixed4 c)
+			fixed4 reverseRimLight(fixed3 norm, fixed3 viewDir, fixed4 c)
 			{
-				fixed rim = max(0, dot(norm, -viewDir)) * _RimPower;
+				fixed rim = max(0, dot(norm, -viewDir)) * _ReverseRimPower;
+				c.rgb += rim * _ReverseRimColor;
+				return c;
+			}
+
+			fixed4 rimLight(fixed3 norm, fixed3 viewDir, fixed4 c)
+			{
+				fixed rim = (1 - max(0, dot(norm, -viewDir))) * _RimPower;
 				c.rgb += rim * _RimColor;
 				return c;
 			}
@@ -208,7 +219,9 @@
 				else 
 				{
 					fixed3 n = normal(rayHitPoint);
-					return rimLight(n, viewDir, simpleLambert(rayHitPoint, n, viewDir));
+					fixed4 c = reverseRimLight(n, viewDir, simpleLambert(rayHitPoint, n, viewDir));
+					c = rimLight(n, viewDir, c);					
+					return c;
 				}
 			}
 			ENDCG
