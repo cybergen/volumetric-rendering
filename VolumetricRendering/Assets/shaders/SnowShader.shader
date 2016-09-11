@@ -56,9 +56,8 @@
 
 			float map(float3 p)
 			{
-				float2 temp = p.xy * 0.5 + float2(0.5, 0.5);
-				float2 uv = clamp(temp, 0, 1);
-				return p.y - tex2D(_SnowHeight, uv).r * _SnowScale;
+				float2 temp = p.xy * 0.5 + 0.5;
+				return p.y - tex2D(_SnowHeight, temp).r * _SnowScale;
 			}
 
 			float shadow(fixed3 rayOrigin, fixed3 rayDir, float min, float max)
@@ -96,7 +95,7 @@
 
 			fixed3 normal(fixed3 p)
 			{
-				const fixed eps = 0.15;
+				const fixed eps = 0.05;
 
 				return normalize
 				(

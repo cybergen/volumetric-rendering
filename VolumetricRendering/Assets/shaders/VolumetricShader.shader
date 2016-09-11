@@ -57,7 +57,7 @@
 
 			float map(float3 p)
 			{
-				float3 uvw = clamp(p * 0.5 + 0.5, 0, 1);
+				float3 uvw = clamp(p + 0.5, 0, 1);
 				return 2 * (tex3D(_Volume, uvw).a - 0.5);
 			}
 
