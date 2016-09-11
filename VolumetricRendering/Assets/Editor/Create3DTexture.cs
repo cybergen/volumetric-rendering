@@ -4,8 +4,8 @@ using UnityEditor;
 public class Create3DTexture : MonoBehaviour
 {
     public const int SIZE = 16;
-    public const float RADIUS_ONE = 0.45f;
-    public const float RADIUS_TWO = 0.1f;
+    public const float RADIUS_ONE = 0.35f;
+    public const float RADIUS_TWO = 0.15f;
 
     [MenuItem("SDF/MakeSphereTexture")]
     public static void EditorTest()
@@ -14,12 +14,12 @@ public class Create3DTexture : MonoBehaviour
         var mat = selectedGO.GetComponent<MeshRenderer>().materials[0];
         var tex = new Texture3D(SIZE, SIZE, SIZE, TextureFormat.ARGB32, false);
         tex.wrapMode = TextureWrapMode.Clamp;
-        tex.filterMode = FilterMode.Point;
+        tex.filterMode = FilterMode.Trilinear;
 
         var cols = new Color[SIZE*SIZE*SIZE];
         var index = 0;
-        var centerOne = new Vector3(0.5f, 0.5f, 0.5f);
-        //var centerTwo = new Vector3(0.35f, 0.45f, 0.35f);
+        var centerOne = new Vector3(0.6f, 0.5f, 0.5f);
+        var centerTwo = new Vector3(0.25f, 0.45f, 0.25f);
         var sizeMax = SIZE - 1;
         for (int z = 0; z < SIZE; z++)
         {
@@ -34,7 +34,7 @@ public class Create3DTexture : MonoBehaviour
 
                     //sphere rule
                     var dist = Vector3.Distance(point, centerOne) - RADIUS_ONE;
-                    //dist = Mathf.Min(dist, (Vector3.Distance(point, centerTwo) - RADIUS_TWO));
+                    dist = Mathf.Min(dist, (Vector3.Distance(point, centerTwo) - RADIUS_TWO));
 
                     //cube rule
                     //var xMin = Mathf.Min(1f - normalizedX, normalizedX - 0f);

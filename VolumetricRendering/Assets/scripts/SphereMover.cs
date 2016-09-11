@@ -9,7 +9,10 @@ public class SphereMover : MonoBehaviour
     public ComputeShader TextureGenerator;
     public int Size;
     public float RadiusOne;
+    public Vector3 CenterOne;
     public float RadiusTwo;
+    public Vector3 CenterTwoStart;
+    public Vector3 CenterTwoEnd;
     public bool AnimateSpheres;
     public bool VoxelMode;
     public float TimeMultiplier;
@@ -36,13 +39,9 @@ public class SphereMover : MonoBehaviour
 
         var cols = new Color[Size * Size * Size];
         var index = 0;
-        var centerOne = new Vector3(0.55f, 0.5f, 0.5f);
-
-        var centerTwo = new Vector3(0.25f, 0.45f, 0.25f);
-        var centerTwoDest = new Vector3(0.65f, 0.65f, 0.65f);
 
         var sin = Mathf.Sin(Time.time * TimeMultiplier) * 0.5f + 0.5f;
-        var currentCenterTwo = Vector3.Lerp(centerTwo, centerTwoDest, sin);
+        var currentCenterTwo = Vector3.Lerp(CenterTwoStart, CenterTwoEnd, sin);
 
         var sizeMax = Size - 1;
         for (int z = 0; z < Size; z++)
@@ -57,7 +56,7 @@ public class SphereMover : MonoBehaviour
                     var point = new Vector3(normalizedX, normalizedY, normalizedZ);
 
                     //sphere rule
-                    var dist = Vector3.Distance(point, centerOne) - RadiusOne;
+                    var dist = Vector3.Distance(point, CenterOne) - RadiusOne;
                     dist = Mathf.Min(dist, (Vector3.Distance(point, currentCenterTwo) - RadiusTwo));
 
                     //cube rule
