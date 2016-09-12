@@ -62,7 +62,7 @@
 			float map(float3 p)
 			{
 				float3 uvw = clamp(p + 0.5, 0, 1);
-				return p.y - (2 * (tex2D(_SnowMap, uvw.xz).r - 0.5));
+				return p.y - (2 * (tex2D(_SnowMap, uvw.xz).a - 0.5));
 			}
 
 			float shadow(fixed3 rayOrigin, fixed3 rayDir, float minValue, float maxValue)
@@ -93,7 +93,7 @@
 				//Self-shadow calculation
 				fixed3 start = position + lightDir;
 				float s = shadow(start, -lightDir, 0, 0.9);
-				NdotL *= s;
+				//NdotL *= s;
 
 				fixed3 h = (lightDir - viewDir) / 2;
 				fixed spec = pow(dot(normal, h), _Specular) * _Gloss;
