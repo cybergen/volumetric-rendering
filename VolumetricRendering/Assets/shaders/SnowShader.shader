@@ -61,8 +61,14 @@
 
 			float map(float3 p)
 			{
-				float3 uvw = clamp(p + 0.5, 0, 1);
-				return p.y - (tex2D(_SnowMap, uvw.xz).r - 0.5);
+				float3 uvw = p + 0.5;
+				float4 cornerOne = mul(_Object2World, float4(-1, -1, -1, 1));
+				float4 cornerTwo = mul(_Object2World, float4(1, 1, 1, 1));
+
+				float x = (uvw.x - cornerOne.x) * ((1 - 0) / (cornerTwo.x - cornerOne.x)) + 0;
+				float z = (uvw.z - cornerOne.z) * ((1 - 0) / (cornerTwo.z - cornerOne.z)) + 0;
+
+				return p.y - (tex2D(_SnowMap, float2(x, z)).r - 0.5);
 			}
 
 			float shadow(fixed3 rayOrigin, fixed3 rayDir, float minValue, float maxValue)
