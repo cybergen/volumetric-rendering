@@ -10,6 +10,14 @@
 		_SpecularColor("Specular Color", Color) = (1, 1, 1)
 		_SoftShadowPower("Shadow Edge", float) = 0.0
 		_SnowMap("Volume", 2D) = "" {}
+		_MinX("MinX", float) = 0.0
+		_MaxX("MaxX", float) = 1.0
+		_MinZ("MinY", float) = 0.0
+		_MaxZ("MaxZ", float) = 1.0
+		_MinXUV("MinXUV", float) = -1.0
+		_MaxXUV("MaxXUV", float) = 1.0
+		_MinZUV("MinZUV", float) = -1.0
+		_MaxZUV("MaxZUV", float) = 1.0
 	}
 	SubShader
 	{
@@ -50,6 +58,15 @@
 			float _Gloss;
 			sampler2D _SnowMap;
 			float _SoftShadowPower;
+			float _MinX;
+			float _MaxX;
+			float _MinZ;
+			float _MaxZ;
+
+			float _MinXUV;
+			float _MaxXUV;
+			float _MinZUV;
+			float _MaxZUV;
 			
 			v2f vert (appdata v)
 			{
@@ -62,11 +79,9 @@
 			float map(float3 p)
 			{
 				float3 uvw = p + 0.5;
-				float4 cornerOne = mul(_Object2World, float4(0, 0, 0, 1));
-				float4 cornerTwo = mul(_Object2World, float4(1, 1, 1, 1));
-				float multiplier = length(cornerTwo - cornerOne);				
-
-				return p.y - (tex2D(_SnowMap, (uvw / (8) + 0.45).xz).r - 0.5);
+				float x = (uvw.x - _MinXUV) * ((_MaxX - _MinX) / (_MaxXUV - _MinXUV)) + _MinX;
+				float z = (uvw.z - _MinZUV) * ((_MaxZ - _MinZ) / (_MaxZUV - _MinZUV)) + _MinZ;
+				return p.y - tex2D(_SnowMap, float2(x, z)).r;
 			}
 
 			float shadow(fixed3 rayOrigin, fixed3 rayDir, float minValue, float maxValue)
