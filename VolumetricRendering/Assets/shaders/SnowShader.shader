@@ -79,8 +79,8 @@
 			float map(float3 p)
 			{
 				float3 uvw = p + 0.5;
-				float x = (uvw.x - _MinXUV) * ((_MaxX - _MinX) / (_MaxXUV - _MinXUV)) + _MinX;
-				float z = (uvw.z - _MinZUV) * ((_MaxZ - _MinZ) / (_MaxZUV - _MinZUV)) + _MinZ;
+				float x = (uvw.x - _MinX) * ((_MaxXUV - _MinXUV) / (_MaxX - _MinX)) + _MinXUV;
+				float z = (uvw.z - _MinZ) * ((_MaxZUV - _MinZUV) / (_MaxZ - _MinZ)) + _MinZUV;
 				return p.y - tex2D(_SnowMap, float2(x, z)).r;
 			}
 
