@@ -10,10 +10,12 @@
 		_SpecularColor("Specular Color", Color) = (1, 1, 1)
 		_SoftShadowPower("Shadow Edge", float) = 0.0
 		_SnowMap("Volume", 2D) = "" {}
+
 		_MinX("MinX", float) = 0.0
 		_MaxX("MaxX", float) = 1.0
 		_MinZ("MinY", float) = 0.0
 		_MaxZ("MaxZ", float) = 1.0
+
 		_MinXUV("MinXUV", float) = -1.0
 		_MaxXUV("MaxXUV", float) = 1.0
 		_MinZUV("MinZUV", float) = -1.0
@@ -58,6 +60,7 @@
 			float _Gloss;
 			sampler2D _SnowMap;
 			float _SoftShadowPower;
+
 			float _MinX;
 			float _MaxX;
 			float _MinZ;
@@ -78,9 +81,8 @@
 
 			float map(float3 p)
 			{
-				float3 uvw = p + 0.5;
-				float x = (uvw.x - _MinX) * ((_MaxXUV - _MinXUV) / (_MaxX - _MinX)) + _MinXUV;
-				float z = (uvw.z - _MinZ) * ((_MaxZUV - _MinZUV) / (_MaxZ - _MinZ)) + _MinZUV;
+				float x = (p.x - _MinX) * ((_MaxXUV - _MinXUV) / (_MaxX - _MinX)) + _MinXUV;
+				float z = (p.z - _MinZ) * ((_MaxZUV - _MinZUV) / (_MaxZ - _MinZ)) + _MinZUV;
 				return p.y - tex2D(_SnowMap, float2(x, z)).r;
 			}
 
