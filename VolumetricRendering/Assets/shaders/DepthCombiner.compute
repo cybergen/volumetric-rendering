@@ -1,0 +1,16 @@
+#pragma kernel CSMain
+
+Texture2D<float4> Depth;
+Texture2D<float4> ExistingDepth;
+RWTexture2D<float4> RenderTarget;
+
+[numthreads(8,8,1)]
+void CSMain(int3 id : SV_DispatchThreadID)
+{    
+    float depthR = Depth[id.xy].r;
+    if (depthR > 0) depthR = 1 - depthR;
+    float renderR = ExistingDepth[id.xy].r;
+    float maximum = max(depthR, renderR);
+
+    RenderTarget[id.xy] = float4(maximum, 0, 0, 1);
+}
