@@ -1,0 +1,15 @@
+#pragma kernel CSMain
+
+Texture2D<float4> Depth;
+Texture2D<float4> ExistingHeight;
+RWTexture2D<float4> RenderTarget;
+
+[numthreads(8,8,1)]
+void CSMain(int3 id : SV_DispatchThreadID)
+{    
+    float depthR = 1 - Depth[id.xy].r;
+    float renderR = ExistingHeight[id.xy].r;
+    float minimum = min(depthR, renderR);
+
+    RenderTarget[id.xy] = float4(minimum, minimum, minimum, 1);
+}
