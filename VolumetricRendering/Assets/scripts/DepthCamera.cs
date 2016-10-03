@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class DepthCamera : MonoBehaviour
 {
@@ -81,5 +82,16 @@ public class DepthCamera : MonoBehaviour
         DepthCombinerStageTwo.Dispatch(_kernelIndexTwo, _depthTextureRes / 8, _depthTextureRes / 8, 1);
         SnowPlane.sharedMaterial.SetTexture("_SnowMap", finalTexture);
         DebugPlaneTwo.sharedMaterial.mainTexture = finalTexture;
+
+        RenderTexture gbuffer0 = RenderTexture.GetTemporary(_depthTextureRes, _depthTextureRes, 5, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+        CommandBuffer commandBuffer = new CommandBuffer();
+        commandBuffer.Blit(BuiltinRenderTextureType.Depth, gbuffer0);
+        Graphics.ExecuteCommandBuffer(commandBuffer);
+        DebugPlaneTwo.sharedMaterial.mainTexture = gbuffer0;
+
+        //computeshader.SetTexture(0, "Input", gbuffer0);
+        //computeshader.SetTexture(0, "Result", rtout0);
+        //computeshader.Dispatch(0, width, height, 1);
+        RenderTexture.ReleaseTemporary(gbuffer0);
     }
 }

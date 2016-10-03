@@ -72,6 +72,7 @@
     <None Include="Assets\shaders\AnimatedSphereGenerator.compute" />
     <None Include="Assets\shaders\DepthCombiner.compute" />
     <None Include="Assets\shaders\DepthCombinerStageTwo.compute" />
+    <None Include="Assets\shaders\RenderDepth.shader" />
     <None Include="Assets\shaders\SDFShader.shader" />
     <None Include="Assets\shaders\SnowShader.shader" />
     <None Include="Assets\shaders\VolumetricShader.shader" />
