@@ -9,6 +9,7 @@ void CSMain(int3 id : SV_DispatchThreadID)
 {    
     float depthR = Depth[id.xy].r;
     if (depthR > 0) depthR = 1 - depthR;
+    depthR = depthR * 2.2;
     float renderR = ExistingDepth[id.xy].r;
     float maximum = max(depthR, renderR);
 
