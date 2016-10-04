@@ -97,7 +97,6 @@ public class SphereMover : MonoBehaviour
         tex.antiAliasing = 1;
         tex.anisoLevel = 1;
         tex.filterMode = FilterMode.Point;
-        tex.autoGenerateMips = false;
         tex.useMipMap = false;
         tex.wrapMode = TextureWrapMode.Clamp;
         tex.Create();
