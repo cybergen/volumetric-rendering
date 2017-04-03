@@ -2,7 +2,6 @@
 {
 	Properties
 	{
-		_MainTex ("Texture", 2D) = "white" {}
 		_MinDistance("Min Distance", float) = 0.01
 		_Color("Sphere Color", Color) = (1, 0, 0)
 		_Specular("Specular Power", Range(0, 64)) = 0
@@ -10,6 +9,13 @@
 		_SpecularColor("Specular Color", Color) = (1, 1, 1)
 		_SoftShadowPower("Shadow Edge", float) = 0.0
 		_SnowMap("Volume", 2D) = "" {}
+
+		_SurfaceDetail("Surface Detail", 2D) = "" {}
+		_DetailScale("Detail Scale", Range(0, 2)) = 1.0
+
+		_ShadowColor("Shadow Color", Color) = (0, 0, 1)
+		_ShadowColorStart("Shadow Color Blend Start", Range(0, 1)) = 0.35
+		_ShadowColorEnd("Shadow Color Blend End", Range(0, 1)) = 0.1
 
 		_MinX("MinX", float) = 0.0
 		_MaxX("MaxX", float) = 1.0
@@ -34,7 +40,6 @@
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
-			#pragma alpha
 			#pragma enable_d3d11_debug_symbols
 			
 			#include "UnityCG.cginc"
@@ -43,16 +48,16 @@
 			struct appdata
 			{
 				float4 vertex : POSITION;
+				float2 uv : TEXCOORD0;
 			};
 
 			struct v2f
 			{
 				float4 vertex : SV_POSITION;
+				float2 uv : TEXCOORD0;
 				float4 lPos : TEXCOORD1;
 			};
 
-			sampler2D _MainTex;
-			float4 _MainTex_ST;
 			float _MinDistance;
 			fixed3 _Color;
 			fixed3 _SpecularColor;
@@ -60,6 +65,13 @@
 			float _Gloss;
 			sampler2D _SnowMap;
 			float _SoftShadowPower;
+			
+			sampler2D _SurfaceDetail;
+			float _DetailScale;
+
+			fixed3 _ShadowColor;
+			fixed _ShadowColorStart;
+			fixed _ShadowColorEnd;
 
 			float _MinX;
 			float _MaxX;
@@ -76,6 +88,7 @@
 				v2f o;
 				o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
 				o.lPos = v.vertex;
+				o.uv = v.uv;
 				return o;
 			}
 
@@ -112,8 +125,8 @@
 				fixed NdotL = max(dot(normal, lightDir), 0);
 
 				//Self-shadow calculation
-				fixed3 start = position + lightDir;
-				float s = shadow(start, -lightDir, 0, 0.9);
+				//fixed3 start = position + lightDir;
+				//float s = shadow(start, -lightDir, 0, 0.9);
 				//NdotL *= s;
 
 				fixed3 h = (lightDir - viewDir) / 2;
@@ -121,6 +134,8 @@
 
 				fixed4 c;			
 				c.rgb = _Color * lightCol * NdotL + (spec * _SpecularColor);
+				fixed magnitude = (c.r + c.g + c.b) / 3;
+				c.rgb += (1 - smoothstep(_ShadowColorStart, _ShadowColorEnd, magnitude)) * _ShadowColor;
 
 				c.a = 1;
 				return c;
@@ -153,6 +168,12 @@
 				}
 				return float3(-1,-1,-1);
 			}
+
+			//Simple linear blend. Consider reoriented normal map in future
+			fixed3 combineNormal(fixed3 base, fixed3 detail)
+			{
+				return normalize(base + detail);
+			}
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
@@ -166,6 +187,8 @@
 				else 
 				{
 					fixed3 n = normal(rayHitPoint);
+					fixed3 detail = UnpackNormal(tex2D(_SurfaceDetail, i.uv)).xyz;
+					n = combineNormal(n, detail * _DetailScale);
 					return simpleLambert(rayHitPoint, n, viewDir, i.lPos);
 				}
 			}
