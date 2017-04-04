@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2015
+# Visual Studio 2017
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VolumetricRendering", "VolumetricRendering.csproj", "{F4CE56C7-176D-FC08-0CCC-6C3933FDE79B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VolumetricRendering.Editor", "VolumetricRendering.Editor.csproj", "{8886523B-5A11-96FC-7AB2-6C35E5C1A732}"

@@ -1,4 +1,6 @@
-﻿Shader "Custom/SnowShader"
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader "Custom/SnowShader"
 {
 	Properties
 	{
@@ -86,7 +88,7 @@
 			v2f vert (appdata v)
 			{
 				v2f o;
-				o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
+				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.lPos = v.vertex;
 				o.uv = v.uv;
 				return o;
@@ -117,25 +119,48 @@
 				return res;
 			}
 
-			fixed4 simpleLambert(fixed3 position, fixed3 normal, fixed3 viewDir, fixed4 localPos)
+			//Simple linear blend. Consider reoriented normal map in future
+			fixed3 combineNormal(fixed3 base, fixed3 detail)
+			{
+				return normalize(base + detail);
+			}
+
+			fixed4 simpleLambert(fixed3 position, fixed3 normal, fixed3 detailNormal, fixed3 viewDir, fixed4 localPos)
 			{
 				fixed3 lightDir = normalize(ObjSpaceLightDir(localPos));
 				fixed3 lightCol = _LightColor0.rgb;
 
-				fixed NdotL = max(dot(normal, lightDir), 0);
+				fixed NdotL = dot(normal, lightDir);
 
 				//Self-shadow calculation
 				//fixed3 start = position + lightDir;
 				//float s = shadow(start, -lightDir, 0, 0.9);
 				//NdotL *= s;
 
+				fixed3 combined = combineNormal(normal, detailNormal * _DetailScale);
 				fixed3 h = (lightDir - viewDir) / 2;
-				fixed spec = pow(dot(normal, h), _Specular) * _Gloss;
+				fixed spec = pow(dot(combined, h), _Specular) * _Gloss;
 
-				fixed4 c;			
-				c.rgb = _Color * lightCol * NdotL + (spec * _SpecularColor);
-				fixed magnitude = (c.r + c.g + c.b) / 3;
-				c.rgb += (1 - smoothstep(_ShadowColorStart, _ShadowColorEnd, magnitude)) * _ShadowColor;
+				//Base color using directionality toward light, albedo, etc.
+				fixed4 c;	
+				c.rgb = _Color * lightCol * NdotL;
+
+				//0 shadow = -1 NdotL
+				//1 shadow = 1 NdotL
+				//Add subsurface color for some range, having it ramp up then down again
+				//from some start value to some end value
+				fixed subsurfaceShadowRange = _ShadowColorEnd - _ShadowColorStart;
+				fixed halfRange = subsurfaceShadowRange / 2 + _ShadowColorStart;
+				//fixed3 subsurface = smoothstep(_ShadowColorStart, subsurfaceShadowRange / 2 + _ShadowColorStart, NdotL);
+				//subsurface = max(subsurface, smoothstep(_ShadowColorStart + halfRange, _ShadowColorEnd, NdotL));
+				fixed3 subsurface = smoothstep(_ShadowColorStart, _ShadowColorEnd, NdotL);
+				fixed3 color = lerp(_ShadowColor.xyz, fixed3(1, 1, 1), subsurface);
+				c.rgb *= color;
+				//c.rgb += (1 - smoothstep(_ShadowColorStart, _ShadowColorEnd, magnitude)) * _ShadowColor;
+
+				//Add specular at end
+				c.rgb += (spec * _SpecularColor);
+				//c.rgb = fixed3(NdotL, NdotL, NdotL);
 
 				c.a = 1;
 				return c;
@@ -168,12 +193,6 @@
 				}
 				return float3(-1,-1,-1);
 			}
-
-			//Simple linear blend. Consider reoriented normal map in future
-			fixed3 combineNormal(fixed3 base, fixed3 detail)
-			{
-				return normalize(base + detail);
-			}
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
@@ -188,8 +207,7 @@
 				{
 					fixed3 n = normal(rayHitPoint);
 					fixed3 detail = UnpackNormal(tex2D(_SurfaceDetail, i.uv)).xyz;
-					n = combineNormal(n, detail * _DetailScale);
-					return simpleLambert(rayHitPoint, n, viewDir, i.lPos);
+					return simpleLambert(rayHitPoint, n, detail, viewDir, i.lPos);
 				}
 			}
 			ENDCG
